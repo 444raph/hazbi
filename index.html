@@ -1,383 +1,389 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formation Kubernetes - Commandes & QCM</title>
-    <style>
-        :root {
-            --primary: #326ce5; /* Kubernetes Blue */
-            --bg-color: #f8f9fa;
-            --text-color: #333;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        header {
-            background-color: var(--primary);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-        nav {
-            display: flex;
-            justify-content: center;
-            background: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        nav button {
-            background: none;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            color: #555;
-            border-bottom: 3px solid transparent;
-        }
-        nav button.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-        nav button:hover {
-            color: var(--primary);
-        }
-        main {
-            max-width: 900px;
-            margin: 2rem auto;
-            padding: 0 20px;
-        }
-        .section {
-            display: none;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .section.active {
-            display: block;
-        }
-        h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        code {
-            background: #eef;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #d63384;
-        }
-        .question-card {
-            background: #fafafa;
-            border: 1px solid #ddd;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-        }
-        .question-title {
-            font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-        .option-label {
-            display: block;
-            padding: 10px;
-            background: #fff;
-            border: 1px solid #ccc;
-            margin-bottom: 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .option-label:hover {
-            background: #f0f8ff;
-            border-color: var(--primary);
-        }
-        .option-label input {
-            margin-right: 10px;
-        }
-        .btn-submit {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            font-size: 1rem;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 20px;
-            display: block;
-            width: 100%;
-        }
-        .btn-submit:hover {
-            background: #2554b3;
-        }
-        #result-box {
-            margin-top: 20px;
-            padding: 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            text-align: center;
-            display: none;
-        }
-        .correct { background: #d4edda !important; border-color: #c3e6cb !important; }
-        .wrong { background: #f8d7da !important; border-color: #f5c6cb !important; }
-    </style>
-</head>
-<body>
+import React, { useState, useEffect } from 'react';
 
-<header>
-    <h1>Kubernetes : Commandes et Gestion</h1>
-    <p>Ressource de révision basée sur les notes de cours</p>
-</header>
+// Fonction utilitaire pour mélanger un tableau (algorithme de Fisher-Yates)
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
-<nav>
-    <button id="btn-cours" class="active" onclick="showTab('cours')">Cours et Commandes</button>
-    <button id="btn-qcm" onclick="showTab('qcm')">QCM (Mode Entraînement)</button>
-</nav>
+// Banque complète des 31 questions avec la bonne réponse et 3 distracteurs
+const bankOfQuestions = [
+  {
+    question: "Charger l'environnement :",
+    correct: "source labs-config.sh",
+    wrong: ["run labs-config.sh", "bash labs-config.sh", "./labs-config.sh"]
+  },
+  {
+    question: "Tester la communication avec le cluster :",
+    correct: "kubectl cluster-info",
+    wrong: ["kubectl status", "kubectl get cluster", "kubectl info"]
+  },
+  {
+    question: "Créer un namespace via un fichier yaml :",
+    correct: "kubectl apply -f ns-login.yaml",
+    wrong: ["kubectl create -f ns-login.yaml", "kubectl run ns-login.yaml", "kubectl add -f ns-login.yaml"]
+  },
+  {
+    question: "Vérifier la création du namespace ns-rlaurens :",
+    correct: "kubectl get namespace ns-rlaurens",
+    wrong: ["kubectl show namespace ns-rlaurens", "kubectl list namespace ns-rlaurens", "kubectl get ns-rlaurens"]
+  },
+  {
+    question: "Créer un pod via un fichier yaml :",
+    correct: "kubectl apply -f nginx-pod.yaml",
+    wrong: ["kubectl create pod nginx-pod.yaml", "kubectl run -f nginx-pod.yaml", "kubectl pod create nginx-pod.yaml"]
+  },
+  {
+    question: "Lister les pods dans le namespace ns-rlaurens :",
+    correct: "kubectl get pods -n ns-rlaurens",
+    wrong: ["kubectl show pods -n ns-rlaurens", "kubectl ls pods --namespace ns-rlaurens", "kubectl list pods ns-rlaurens"]
+  },
+  {
+    question: "Afficher un pod au format YAML :",
+    correct: "kubectl get pod nginx-pod -n ns-rlaurens -o yaml",
+    wrong: ["kubectl describe pod nginx-pod -n ns-rlaurens --yaml", "kubectl show pod nginx-pod -n ns-rlaurens -f yaml", "kubectl get pod nginx-pod -n ns-rlaurens --format=yaml"]
+  },
+  {
+    question: "Afficher un pod au format JSON :",
+    correct: "kubectl get pod nginx-pod -n ns-rlaurens -o json",
+    wrong: ["kubectl dump pod nginx-pod -n ns-rlaurens -f json", "kubectl get pod nginx-pod -n ns-rlaurens --json", "kubectl show pod nginx-pod -n ns-rlaurens -o json"]
+  },
+  {
+    question: "Afficher le nom du conteneur avec jsonpath :",
+    correct: "kubectl get pod nginx-pod -n ns-rlaurens -o jsonpath='{.spec.containers[*].name}'",
+    wrong: ["kubectl get pod nginx-pod -n ns-rlaurens --jsonpath='{.containers.name}'", "kubectl describe pod nginx-pod -n ns-rlaurens --show-containers", "kubectl extract pod nginx-pod -n ns-rlaurens -o jsonpath='{.name}'"]
+  },
+  {
+    question: "Décrire en détail un pod :",
+    correct: "kubectl describe pod nginx-pod -n ns-rlaurens",
+    wrong: ["kubectl details pod nginx-pod -n ns-rlaurens", "kubectl get pod nginx-pod -n ns-rlaurens --details", "kubectl inspect pod nginx-pod -n ns-rlaurens"]
+  },
+  {
+    question: "Ouvrir un shell bash interactif dans un pod :",
+    correct: "kubectl exec -it nginx-pod -n ns-rlaurens -- /bin/bash",
+    wrong: ["kubectl attach -it nginx-pod -n ns-rlaurens -- /bin/bash", "kubectl shell nginx-pod -n ns-rlaurens", "kubectl ssh nginx-pod -n ns-rlaurens"]
+  },
+  {
+    question: "Afficher le nom d'hôte à l'intérieur du conteneur (une fois dans le bash) :",
+    correct: "hostname",
+    wrong: ["host-info", "get hostname", "kubectl hostname"]
+  },
+  {
+    question: "Supprimer un pod :",
+    correct: "kubectl delete pod nginx-pod -n ns-rlaurens",
+    wrong: ["kubectl remove pod nginx-pod -n ns-rlaurens", "kubectl rm pod nginx-pod -n ns-rlaurens", "kubectl destroy pod nginx-pod -n ns-rlaurens"]
+  },
+  {
+    question: "Appliquer un ReplicaSet via yaml :",
+    correct: "kubectl apply -f rs-nginx.yaml",
+    wrong: ["kubectl create -f rs-nginx.yaml", "kubectl run rs-nginx.yaml", "kubectl set -f rs-nginx.yaml"]
+  },
+  {
+    question: "Obtenir les informations d'un ReplicaSet précis :",
+    correct: "kubectl get rs rs-nginx -n ns-rlaurens",
+    wrong: ["kubectl show rs rs-nginx -n ns-rlaurens", "kubectl get replicaset rs-nginx --ns=ns-rlaurens", "kubectl list rs rs-nginx -n ns-rlaurens"]
+  },
+  {
+    question: "Décrire en détail un ReplicaSet :",
+    correct: "kubectl describe rs rs-nginx -n ns-rlaurens",
+    wrong: ["kubectl inspect rs rs-nginx -n ns-rlaurens", "kubectl info rs rs-nginx -n ns-rlaurens", "kubectl details rs rs-nginx -n ns-rlaurens"]
+  },
+  {
+    question: "Surveiller les pods en temps réel :",
+    correct: "kubectl get pods -n ns-rlaurens -w",
+    wrong: ["kubectl watch pods -n ns-rlaurens", "kubectl monitor pods -n ns-rlaurens", "kubectl get pods -n ns-rlaurens --live"]
+  },
+  {
+    question: "Augmenter (Scale) le ReplicaSet à 4 réplicas :",
+    correct: "kubectl scale rs rs-nginx --replicas=4 -n ns-rlaurens",
+    wrong: ["kubectl resize rs rs-nginx --size=4 -n ns-rlaurens", "kubectl update rs rs-nginx --replicas=4 -n ns-rlaurens", "kubectl set replicas rs rs-nginx 4 -n ns-rlaurens"]
+  },
+  {
+    question: "Diminuer (Scale) le ReplicaSet à 2 réplicas :",
+    correct: "kubectl scale rs rs-nginx --replicas=2 -n ns-rlaurens",
+    wrong: ["kubectl downscale rs rs-nginx --replicas=2 -n ns-rlaurens", "kubectl reduce rs rs-nginx --count=2 -n ns-rlaurens", "kubectl scale-down rs rs-nginx -n ns-rlaurens 2"]
+  },
+  {
+    question: "Supprimer un ReplicaSet :",
+    correct: "kubectl delete rs rs-nginx -n ns-rlaurens",
+    wrong: ["kubectl remove rs rs-nginx -n ns-rlaurens", "kubectl drop rs rs-nginx -n ns-rlaurens", "kubectl clean rs rs-nginx -n ns-rlaurens"]
+  },
+  {
+    question: "Vérifier que toutes les ressources ont disparu (tout lister) :",
+    correct: "kubectl get all -n ns-rlaurens",
+    wrong: ["kubectl get everything -n ns-rlaurens", "kubectl list all -n ns-rlaurens", "kubectl show all -n ns-rlaurens"]
+  },
+  {
+    question: "Appliquer un Deployment en sauvegardant l'historique :",
+    correct: "kubectl apply -f dep-nginx.yaml --record=true",
+    wrong: ["kubectl apply -f dep-nginx.yaml --save-history", "kubectl create -f dep-nginx.yaml --history=true", "kubectl deploy -f dep-nginx.yaml --record"]
+  },
+  {
+    question: "Obtenir les informations du Deployment :",
+    correct: "kubectl get deployment dep-nginx -n ns-rlaurens",
+    wrong: ["kubectl show deployment dep-nginx -n ns-rlaurens", "kubectl get deploy dep-nginx.yaml -n ns-rlaurens", "kubectl list deployment dep-nginx -n ns-rlaurens"]
+  },
+  {
+    question: "Décrire en détail le Deployment :",
+    correct: "kubectl describe deployment dep-nginx -n ns-rlaurens",
+    wrong: ["kubectl inspect deployment dep-nginx -n ns-rlaurens", "kubectl get deployment dep-nginx -n ns-rlaurens --describe", "kubectl details deployment dep-nginx -n ns-rlaurens"]
+  },
+  {
+    question: "Lister tous les ReplicaSets du namespace :",
+    correct: "kubectl get rs -n ns-rlaurens",
+    wrong: ["kubectl get replicasets all -n ns-rlaurens", "kubectl list rs -n ns-rlaurens", "kubectl show rs -n ns-rlaurens"]
+  },
+  {
+    question: "Mettre à jour l'image du Deployment (vers nginx:1.16.1) avec historique :",
+    correct: "kubectl set image deployment/dep-nginx nginx=nginx:1.16.1 -n ns-rlaurens --record=true",
+    wrong: ["kubectl update image deployment/dep-nginx nginx:1.16.1 -n ns-rlaurens", "kubectl change image deployment/dep-nginx nginx=nginx:1.16.1 -n ns-rlaurens", "kubectl apply image deployment/dep-nginx nginx:1.16.1 -n ns-rlaurens --record=true"]
+  },
+  {
+    question: "Voir le statut du déploiement en cours (rollout) :",
+    correct: "kubectl rollout status deployment/dep-nginx -n ns-rlaurens",
+    wrong: ["kubectl get rollout deployment/dep-nginx -n ns-rlaurens", "kubectl status deployment/dep-nginx -n ns-rlaurens", "kubectl check rollout deployment/dep-nginx -n ns-rlaurens"]
+  },
+  {
+    question: "Voir l'historique des révisions du Deployment :",
+    correct: "kubectl rollout history deployment/dep-nginx -n ns-rlaurens",
+    wrong: ["kubectl get history deployment/dep-nginx -n ns-rlaurens", "kubectl history deployment/dep-nginx -n ns-rlaurens", "kubectl rollout log deployment/dep-nginx -n ns-rlaurens"]
+  },
+  {
+    question: "Annuler (rollback) à la révision 2 du Deployment :",
+    correct: "kubectl rollout undo deployment/dep-nginx --to-revision=2 -n ns-rlaurens",
+    wrong: ["kubectl rollback deployment/dep-nginx --revision=2 -n ns-rlaurens", "kubectl revert deployment/dep-nginx --to=2 -n ns-rlaurens", "kubectl rollout revert deployment/dep-nginx --version=2 -n ns-rlaurens"]
+  },
+  {
+    question: "Augmenter (Scale) le Deployment à 4 réplicas :",
+    correct: "kubectl scale deployment dep-nginx --replicas=4 -n ns-rlaurens",
+    wrong: ["kubectl resize deployment dep-nginx --size=4 -n ns-rlaurens", "kubectl set replicas deployment/dep-nginx 4 -n ns-rlaurens", "kubectl expand deployment dep-nginx --replicas=4 -n ns-rlaurens"]
+  },
+  {
+    question: "Supprimer le Deployment :",
+    correct: "kubectl delete deployment dep-nginx -n ns-rlaurens",
+    wrong: ["kubectl remove deployment dep-nginx -n ns-rlaurens", "kubectl drop deployment dep-nginx -n ns-rlaurens", "kubectl stop deployment dep-nginx -n ns-rlaurens"]
+  }
+];
 
-<main>
-    <!-- PARTIE COURS -->
-    <section id="cours" class="section active">
-        <h2>1. Environnement et Outils</h2>
-        <ul>
-            <li><code>labs-config.conf</code> : Contient les certificats pour authentifier la connexion.</li>
-            <li><code>labs-config.sh</code> : Script pour configurer l'environnement. À exécuter avec <code>source labs-config.sh</code>.</li>
-            <li><code>kubectl</code> : Outil officiel (utilise <code>~/.kube/config</code>). Test de connexion : <code>kubectl cluster-info</code>.</li>
-            <li><code>k9s</code> : Interface graphique TUI dans le terminal pour la surveillance.</li>
-        </ul>
+export default function App() {
+  const [gameQuestions, setGameQuestions] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [errors, setErrors] = useState([]);
+  const [isFinished, setIsFinished] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
 
-        <h2>2. Gestion des Pods</h2>
-        <ul>
-            <li><strong>Pod</strong> : Plus petite unité logique, contient un ou plusieurs conteneurs.</li>
-            <li><strong>États</strong> : Pending, Running, Succeeded, Failed.</li>
-            <li><code>kubectl apply -f ns-login.yaml</code> : Crée l'espace de nom.</li>
-            <li><code>kubectl apply -f nginx-pod.yaml</code> : Déploie le pod.</li>
-            <li><code>kubectl get pods -n ns-rlaurens</code> : Liste les pods.</li>
-            <li><code>kubectl describe pod nginx-pod -n ns-rlaurens</code> : Affiche les détails et événements.</li>
-            <li><code>kubectl get pod nginx-pod -n ns-rlaurens -o jsonpath='{.spec.containers[*].name}'</code> : Isole le nom du conteneur.</li>
-            <li><code>kubectl exec -it nginx-pod -n ns-rlaurens -- /bin/bash</code> : Ouvre un shell interactif.</li>
-            <li><code>kubectl delete pod nginx-pod -n ns-rlaurens</code> : Supprime le pod.</li>
-        </ul>
-
-        <h2>3. ReplicaSet & Deployment</h2>
-        <ul>
-            <li><strong>ReplicaSet</strong> : Maintient un ensemble stable de Pods.</li>
-            <li><strong>Deployment</strong> : Gère les ReplicaSets, permet le Rollback et le Rolling Update.</li>
-            <li><code>kubectl get pods -n ns-rlaurens -w</code> : Surveiller en temps réel.</li>
-            <li><code>kubectl scale deployment dep-nginx --replicas=4 -n ns-rlaurens</code> : Scale UP (augmente la charge).</li>
-            <li><code>kubectl set image deployment/dep-nginx nginx=nginx:1.16.1 --record=true</code> : Mise à jour de l'image (historisée).</li>
-            <li><code>kubectl rollout undo deployment/dep-nginx --to-revision=2 -n ns-rlaurens</code> : Rollback d'une version erronée.</li>
-        </ul>
-
-        <h2>4. Services (Réseau)</h2>
-        <ul>
-            <li><strong>ClusterIP</strong> : Type par défaut. Expose le service sur une IP interne (ex: Backend de base de données).</li>
-            <li><strong>NodePort</strong> : Expose le service vers l'extérieur (ex: Frontend web).</li>
-            <li><code>kubectl port-forward svc/svc-nodeport-dep-app-guestbook 9999:80 -n ns-rlaurens</code> : Transfert de port pour accès local.</li>
-        </ul>
-    </section>
-
-    <!-- PARTIE QCM -->
-    <section id="qcm" class="section">
-        <h2>Quiz sur les Commandes Kubernetes</h2>
-        <p>Ce test sélectionne aléatoirement 20 questions parmi une base complète de plus de 100 questions.</p>
-        <div id="qcm-container"></div>
-        <button class="btn-submit" onclick="calculerScore()">Valider mes réponses</button>
-        <div id="result-box"></div>
-        <button class="btn-submit" style="display:none; margin-top:10px; background:#6c757d;" id="btn-restart" onclick="initQCM()">Recommencer un nouveau QCM</button>
-    </section>
-</main>
-
-<script>
-    // 1. Définition des concepts de base pour enrichir le pool manuellement
-    let pool = [
-        { q: "Qu'est-ce qu'un Pod dans Kubernetes ?", o: ["La plus petite unité de calcul déployable", "Un espace de stockage persistant", "Un équilibreur de charge externe", "Un nœud physique du cluster"], a: 0 },
-        { q: "Quel est le rôle du fichier labs-config.conf ?", o: ["Contenir les certificats d'authentification au cluster", "Stocker les logs des applications", "Définir l'architecture réseau", "Contenir le code source de l'application"], a: 0 },
-        { q: "Que permet de faire l'outil k9s ?", o: ["Naviguer et surveiller les ressources via une interface graphique TUI", "Compiler des images Docker", "Créer automatiquement des clusters", "Générer des fichiers YAML"], a: 0 },
-        { q: "Lequel de ces états N'EST PAS un état valide pour le cycle de vie d'un Pod ?", o: ["Paused", "Pending", "Running", "Succeeded"], a: 0 },
-        { q: "Que permet de faire le flag --record=true lors de l'application d'un déploiement ?", o: ["Sauvegarder la commande dans l'historique des révisions", "Activer les logs détaillés", "Enregistrer le trafic réseau", "Verrouiller le pod contre la suppression"], a: 0 },
-        { q: "Quel type de Service doit être utilisé pour isoler une base de données en interne ?", o: ["ClusterIP", "NodePort", "LoadBalancer", "ExternalName"], a: 0 },
-        { q: "Que permet la commande kubectl port-forward ?", o: ["Simuler un accès externe via un transfert de port local", "Ouvrir définitivement un port sur le routeur physique", "Changer le port d'écoute d'un conteneur en direct", "Rediriger le trafic d'un cluster à un autre"], a: 0 }
-    ];
-
-    // 2. Génération programmatique stricte pour dépasser 100 questions (Pool dynamique)
-    const resources = [
-        { res: 'pods', label: 'les Pods' },
-        { res: 'rs', label: 'les ReplicaSets' },
-        { res: 'deployment', label: 'les Deployments' },
-        { res: 'svc', label: 'les Services' },
-        { res: 'namespace', label: 'les Namespaces' }
-    ];
+  // Initialiser la partie avec 20 questions aléatoires
+  const initGame = () => {
+    // 1. Mélanger la banque de questions complète
+    const shuffledBank = shuffleArray(bankOfQuestions);
     
-    const actions = [
-        { verb: 'afficher la liste de', cmd: 'get' },
-        { verb: 'décrire en détail', cmd: 'describe' },
-        { verb: 'supprimer', cmd: 'delete' }
-    ];
+    // 2. Sélectionner 20 questions
+    const selected = shuffledBank.slice(0, 20);
     
-    const namespaces = ['ns-rlaurens', 'default', 'kube-system', 'production', 'dev-env'];
-
-    // Génération des combinaisons de commandes (3 actions x 5 ressources x 5 namespaces = 75 questions)
-    actions.forEach(action => {
-        resources.forEach(resource => {
-            namespaces.forEach(ns => {
-                pool.push({
-                    q: `Quelle commande permet de ${action.verb} ${resource.label} dans le namespace '${ns}' ?`,
-                    o: [
-                        `kubectl ${action.cmd} ${resource.res} -n ${ns}`,
-                        `kubectl ${action.cmd} -n ${ns} ${resource.res}`, // Syntaxe moins conventionnelle
-                        `kubectl ${resource.res} ${action.cmd} -n ${ns}`,
-                        `kubectl ${action.cmd} ${ns} ${resource.res}`
-                    ],
-                    a: 0
-                });
-            });
-        });
+    // 3. Formater les questions et mélanger les choix pour chaque question
+    const formattedQuestions = selected.map((q) => {
+      const options = shuffleArray([q.correct, ...q.wrong]);
+      return { ...q, options };
     });
 
-    // Génération des questions de formatage JSON/YAML (2 formats x 5 ressources = 10 questions)
-    const formats = ['yaml', 'json'];
-    formats.forEach(format => {
-        resources.forEach(resource => {
-            pool.push({
-                q: `Comment formater la sortie de la liste pour ${resource.label} au format ${format.toUpperCase()} (dans ns-rlaurens) ?`,
-                o: [
-                    `kubectl get ${resource.res} -n ns-rlaurens -o ${format}`,
-                    `kubectl get ${resource.res} -n ns-rlaurens --format ${format}`,
-                    `kubectl describe ${resource.res} -n ns-rlaurens -f ${format}`,
-                    `kubectl show ${resource.res} as ${format}`
-                ],
-                a: 0
-            });
-        });
-    });
+    setGameQuestions(formattedQuestions);
+    setCurrentIndex(0);
+    setScore(0);
+    setErrors([]);
+    setIsFinished(false);
+    setSelectedAnswer(null);
+  };
 
-    // Génération des questions de scaling (2 ressources x 5 réplicas = 10 questions)
-    const scaleRes = ['rs rs-nginx', 'deployment dep-nginx'];
-    const scaleNums = [2, 3, 4, 5, 10];
-    scaleRes.forEach(sr => {
-        scaleNums.forEach(num => {
-            pool.push({
-                q: `Quelle commande permet d'ajuster l'échelle (scale) de '${sr}' à ${num} réplicas dans ns-rlaurens ?`,
-                o: [
-                    `kubectl scale ${sr} --replicas=${num} -n ns-rlaurens`,
-                    `kubectl set replicas ${sr} ${num} -n ns-rlaurens`,
-                    `kubectl scale --count=${num} ${sr}`,
-                    `kubectl update ${sr} -r ${num}`
-                ],
-                a: 0
-            });
-        });
-    });
+  // Lancer au montage du composant
+  useEffect(() => {
+    initGame();
+  }, []);
 
-    // Génération des questions liées aux fichiers YAML (5 fichiers = 5 questions)
-    const fichiers = ['ns-login.yaml', 'nginx-pod.yaml', 'rs-nginx.yaml', 'dep-nginx.yaml', 'dep-redis.yaml'];
-    fichiers.forEach(fichier => {
-        pool.push({
-            q: `Quelle commande permet d'appliquer la configuration contenue dans '${fichier}' ?`,
-            o: [
-                `kubectl apply -f ${fichier}`,
-                `kubectl create yaml ${fichier}`,
-                `kubectl deploy -file ${fichier}`,
-                `kubectl apply --source ${fichier}`
-            ],
-            a: 0
-        });
-    });
+  // Gestion du clic sur une réponse
+  const handleAnswer = (selectedOption) => {
+    if (selectedAnswer !== null) return; // Empêche de cliquer plusieurs fois sur la même question
 
-    // Fonction de mélange de tableau (Fisher-Yates)
-    function shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
+    setSelectedAnswer(selectedOption);
+    const currentQuestion = gameQuestions[currentIndex];
+    
+    if (selectedOption === currentQuestion.correct) {
+      setScore(score + 1);
+    } else {
+      // Sauvegarder l'erreur pour le résumé
+      setErrors([...errors, {
+        question: currentQuestion.question,
+        selected: selectedOption,
+        correct: currentQuestion.correct
+      }]);
     }
+  };
 
-    let currentQuestions = [];
-
-    function initQCM() {
-        // Sélectionner aléatoirement 20 questions du pool total
-        shuffleArray(pool);
-        currentQuestions = pool.slice(0, 20);
-        
-        const container = document.getElementById("qcm-container");
-        container.innerHTML = "";
-        
-        currentQuestions.forEach((q, index) => {
-            // Créer une copie des options pour les mélanger, tout en traquant la bonne réponse
-            let optionsWithIndex = q.o.map((opt, i) => ({ text: opt, isCorrect: i === q.a }));
-            shuffleArray(optionsWithIndex);
-
-            let html = `<div class="question-card" id="q-card-${index}">
-                <div class="question-title">${index + 1}. ${q.q}</div>`;
-                
-            optionsWithIndex.forEach((opt, i) => {
-                html += `
-                <label class="option-label" id="label-${index}-${i}">
-                    <input type="radio" name="q${index}" value="${opt.isCorrect}">
-                    ${opt.text}
-                </label>`;
-            });
-            html += `</div>`;
-            container.innerHTML += html;
-        });
-
-        // Réinitialiser l'UI
-        document.getElementById("result-box").style.display = "none";
-        document.querySelector(".btn-submit").style.display = "block";
-        document.getElementById("btn-restart").style.display = "none";
+  // Passer à la question suivante ou terminer
+  const handleNextQuestion = () => {
+    if (currentIndex + 1 < gameQuestions.length) {
+      setCurrentIndex(currentIndex + 1);
+      setSelectedAnswer(null);
+    } else {
+      setIsFinished(true);
     }
+  };
 
-    function calculerScore() {
-        let score = 0;
-        currentQuestions.forEach((q, index) => {
-            const radios = document.getElementsByName(`q${index}`);
-            let answered = false;
-            radios.forEach((radio, i) => {
-                const label = document.getElementById(`label-${index}-${i}`);
-                label.classList.remove('correct', 'wrong');
-                
-                if (radio.checked) {
-                    answered = true;
-                    if (radio.value === "true") {
-                        score++;
-                        label.classList.add('correct');
-                    } else {
-                        label.classList.add('wrong');
-                    }
+  // Si l'application charge
+  if (gameQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <p className="text-white text-xl animate-pulse">Chargement du QCM...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-200 font-sans flex flex-col items-center justify-center p-4">
+      {/* HEADER */}
+      <header className="mb-8 text-center">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-[#326ce5]">
+          QCM Commandes Kubernetes
+        </h1>
+      </header>
+
+      {/* CONTENEUR PRINCIPAL */}
+      <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl p-6 md:p-10 border border-slate-700">
+        
+        {!isFinished ? (
+          // --- ÉCRAN DE JEU ---
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-sm font-semibold text-slate-400 uppercase tracking-widest">
+                Question {currentIndex + 1} / {gameQuestions.length}
+              </span>
+              <span className="text-sm font-semibold bg-[#326ce5] text-white px-3 py-1 rounded-full shadow">
+                Score: {score}
+              </span>
+            </div>
+
+            {/* Barre de progression */}
+            <div className="w-full bg-slate-700 rounded-full h-2.5 mb-8">
+              <div 
+                className="bg-[#326ce5] h-2.5 rounded-full transition-all duration-300" 
+                style={{ width: `${((currentIndex + 1) / gameQuestions.length) * 100}%` }}
+              ></div>
+            </div>
+
+            {/* Question */}
+            <h2 className="text-xl md:text-2xl font-semibold mb-8 text-white leading-relaxed">
+              {gameQuestions[currentIndex].question}
+            </h2>
+
+            {/* Boutons de réponses */}
+            <div className="space-y-4">
+              {gameQuestions[currentIndex].options.map((option, idx) => {
+                const isCorrect = option === gameQuestions[currentIndex].correct;
+                const isSelected = option === selectedAnswer;
+                const hasAnswered = selectedAnswer !== null;
+
+                // Stylisation dynamique des boutons selon l'état de la réponse
+                let buttonClass = "w-full text-left p-4 rounded-xl border transition-all duration-200 focus:outline-none group ";
+
+                if (!hasAnswered) {
+                  buttonClass += "border-slate-600 bg-slate-700/50 hover:bg-[#326ce5] hover:border-[#326ce5] hover:text-white cursor-pointer focus:ring-4 focus:ring-[#326ce5]/50";
+                } else {
+                  buttonClass += "cursor-not-allowed ";
+                  if (isCorrect) {
+                    buttonClass += "bg-green-500/20 border-green-500 text-green-400 font-bold shadow-[0_0_15px_rgba(34,197,94,0.3)]";
+                  } else if (isSelected && !isCorrect) {
+                    buttonClass += "bg-red-500/20 border-red-500 text-red-400";
+                  } else {
+                    buttonClass += "bg-slate-800 border-slate-700 text-slate-500 opacity-50";
+                  }
                 }
-                // Surligner la bonne réponse si erreur ou omission
-                if (radio.value === "true" && !radio.checked) {
-                    label.classList.add('correct');
-                }
-                radio.disabled = true; // Empêcher la modification
-            });
-        });
 
-        const resultBox = document.getElementById("result-box");
-        resultBox.style.display = "block";
-        resultBox.className = score >= 10 ? "correct" : "wrong";
-        resultBox.innerHTML = `Votre score : ${score} / 20`;
-        
-        document.querySelector(".btn-submit").style.display = "none";
-        document.getElementById("btn-restart").style.display = "block";
-    }
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleAnswer(option)}
+                    disabled={hasAnswered}
+                    className={buttonClass}
+                  >
+                    <code className="font-mono text-sm md:text-base">{option}</code>
+                  </button>
+                );
+              })}
+            </div>
 
-    // Gestion des onglets
-    function showTab(tabName) {
-        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-        document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-        
-        document.getElementById(tabName).classList.add('active');
-        document.getElementById(`btn-${tabName}`).classList.add('active');
-    }
+            {/* Bouton Question Suivante */}
+            {selectedAnswer !== null && (
+              <div className="mt-8 flex justify-end animate-[fadeIn_0.3s_ease-in-out]">
+                <button
+                  onClick={handleNextQuestion}
+                  className="bg-[#326ce5] hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition transform hover:scale-105"
+                >
+                  {currentIndex + 1 < gameQuestions.length ? "Question suivante ➔" : "Voir les résultats ➔"}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          // --- ÉCRAN DE FIN ---
+          <div className="animate-fade-in text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">Quiz Terminé !</h2>
+            
+            <div className="flex flex-col items-center justify-center my-8">
+              <div className={`text-6xl font-extrabold mb-2 ${score >= 15 ? 'text-green-400' : score >= 10 ? 'text-yellow-400' : 'text-red-400'}`}>
+                {score} / {gameQuestions.length}
+              </div>
+              <p className="text-lg text-slate-400">
+                {score === 20 ? "Parfait ! Tu maîtrises K8s comme un chef ! 🚢" 
+                : score >= 15 ? "Très bon score ! L'examen CKA approche ! 🚀"
+                : score >= 10 ? "Pas mal, mais encore un peu de pratique ! 📦"
+                : "Aïe, il faut retourner réviser les pods et les deployments ! 📉"}
+              </p>
+            </div>
 
-    // Initialisation au chargement
-    window.onload = initQCM;
-</script>
+            {/* Résumé des erreurs */}
+            {errors.length > 0 && (
+              <div className="mt-8 text-left bg-slate-900/50 p-6 rounded-xl border border-slate-700 max-h-96 overflow-y-auto">
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                  <svg className="w-6 h-6 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Résumé des erreurs ({errors.length})
+                </h3>
+                <ul className="space-y-6">
+                  {errors.map((err, idx) => (
+                    <li key={idx} className="border-b border-slate-700 pb-4 last:border-0 last:pb-0">
+                      <p className="font-semibold text-slate-200 mb-2">{err.question}</p>
+                      <div className="flex flex-col space-y-2 text-sm font-mono">
+                        <div className="flex items-start">
+                          <span className="text-red-400 font-bold mr-2 w-20 flex-shrink-0">Tu as mis :</span>
+                          <span className="text-red-300 break-all">{err.selected}</span>
+                        </div>
+                        <div className="flex items-start">
+                          <span className="text-green-400 font-bold mr-2 w-20 flex-shrink-0">Correction:</span>
+                          <span className="text-green-300 break-all">{err.correct}</span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-</body>
-</html>
+            <button
+              onClick={initGame}
+              className="mt-8 bg-[#326ce5] hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500/50"
+            >
+              Recommencer une partie
+            </button>
+          </div>
+        )}
+      </div>
+      
+      <footer className="mt-8 text-slate-500 text-sm">
+        Généré avec React & Tailwind CSS
+      </footer>
+    </div>
+  );
+}
